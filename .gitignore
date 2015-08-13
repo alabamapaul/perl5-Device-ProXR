@@ -1,1 +1,7 @@
+## Ignore backup filenames that end in tilde
 *~
+*.bak
+## Ignore DistZilla's temporary build directory
+.build*
+## Ignore jEdits marker files
+\#*\#
