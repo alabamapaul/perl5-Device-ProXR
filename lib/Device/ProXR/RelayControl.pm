@@ -1,0 +1,314 @@
+package Device::ProXR::RelayControl;
+##----------------------------------------------------------------------------
+## :mode=perl:indentSize=2:tabSize=2:noTabs=true:
+##****************************************************************************
+##****************************************************************************
+
+=head1 NAME
+
+Device::ProXR::RelayControl - A subclass of Device::ProXR object for relay
+control.
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 NOTES
+
+* Before comitting this file to the repository, ensure Perl Critic can be
+  invoked at the HARSH [3] level with no errors
+
+=head1 SYNOPSIS
+
+  use Device::ProXR::RelayControl;
+  
+  my $board = Device::ProXR::RelayControl->new(qq{COM2});
+  
+
+=cut
+
+##****************************************************************************
+##****************************************************************************
+use Readonly;
+use Moo;
+## Moo enables strictures
+## no critic (TestingAndDebugging::RequireUseStrict)
+## no critic (TestingAndDebugging::RequireUseWarnings)
+
+extends 'Device::ProXR';
+
+our $VERSION = "0.01";
+
+##--------------------------------------------------------
+## Symbolic constants
+##--------------------------------------------------------
+
+## Command to check 2-way communications
+Readonly::Scalar my $PROXR_CMD_TEST_2WAY_COMMS  => 0x21;
+## Response to the check 2-way comms
+Readonly::Scalar my $PROXR_MODE_RUN       =>  0x55;
+Readonly::Scalar my $PROXR_MODE_CONFIG    =>  0x56;
+Readonly::Scalar my $PROXR_MODE_LOCKDOWN  =>  0x57;
+
+## The folowing commands are used for individual relays 
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_OFF    => 0x64;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_ON     => 0x6C;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_STATUS => 0x74;
+
+## The folowing commands are used for all relays in a specified bank 
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_STATUS         => 0x7C;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_ALL_OFF  => 0x81;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_ALL_ON   => 0x82;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_INVERT   => 0x83;
+Readonly::Scalar my $PROXR_CMD_BANK_DIRECTED_RELAY_MIRROR   => 0x84;
+
+## Response to ACKnowledge the command
+Readonly::Scalar my $PROXR_RESP_ACK =>  0x55;
+
+##****************************************************************************
+## Object Attributes
+##****************************************************************************
+
+=head1 ATTRIBUTES
+
+=cut
+
+##****************************************************************************
+## Object Methods
+##****************************************************************************
+
+=head1 METHODS
+
+=cut
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 get_mode()
+
+=over 2
+
+=item B<Description>
+
+Returns the current mode of operation
+
+=item B<Parameters>
+
+NONE
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub get_mode
+{
+  my $self = shift;
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_TEST_2WAY_COMMS);
+
+  return $self->get_response; 
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 relay_on($bank, $relay)
+
+=over 2
+
+=item B<Description>
+
+Turn on the relay of the specific bank
+
+=item B<Parameters>
+
+$bank - Bank number of the relay to control
+$relay - Relay number of the relay to control
+
+=item B<Return>
+
+UNDEF on error (with last_error set)
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub relay_on
+{
+  my $self  = shift;
+  my $bank  = shift;
+  my $relay = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank_and_relay($bank, $relay));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_ON + $relay, $bank);
+  
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 relay_off($bank, $relay)
+
+=over 2
+
+=item B<Description>
+
+Turn off the relay of the specific bank
+
+=item B<Parameters>
+
+$bank - Bank number of the relay to control
+$relay - Relay number of the relay to control
+
+=item B<Return>
+
+UNDEF on error (with last_error set)
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub relay_off
+{
+  my $self  = shift;
+  my $bank  = shift;
+  my $relay = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank_and_relay($bank, $relay));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_OFF + $relay, $bank);
+  
+  return $self->get_response;
+}
+
+##----------------------------------------------------------------------------
+##     @fn _valid_bank_and_relay($bank, $relay)
+##  @brief Returns TRUE value if bank AND relay are valid, or UNDEF if 
+##         either bank OR relay is invalid
+##  @param $bank - Bank number
+##  @param $relay - Relay number
+## @return UNDEF with error_message set if bank OR relay is invalid
+##         1 if bank AND relay are valid
+##   @note 
+##----------------------------------------------------------------------------
+sub _valid_bank_and_relay
+{
+  my $self  = shift;
+  my $bank  = shift;
+  my $relay = shift;
+  
+  return ($self->_valid_bank($bank) && $self->_valid_relay($relay));
+}
+
+##----------------------------------------------------------------------------
+##     @fn _valid_bank($bank)
+##  @brief Returns TRUE value if bank is valid, or UNDEF if bank is invalid
+##  @param $bank - Bank number
+## @return UNDEF with error_message set if bank is invalid
+##         1 if bank is valid
+##   @note 
+##----------------------------------------------------------------------------
+sub _valid_bank
+{
+  my $self = shift;
+  my $bank = shift;
+  
+  unless (defined($bank))
+  {
+    $self->_error_message(qq{Bank parameter missing!});
+    return;
+  }
+  unless ($bank =~ /\A\d+\Z/x)
+  {
+    $self->_error_message(qq{Bank must be a number!});
+    return;
+  }
+  if (($bank < 0) || ($bank > 255))
+  {
+    $self->_error_message(qq{Bank must be a number between 0 and 255!});
+    return;
+  }
+  
+  return 1;
+}
+
+##----------------------------------------------------------------------------
+##     @fn _valid_relay($relay)
+##  @brief Returns TRUE value if relay is valid, or UNDEF if relay is invalid
+##  @param $relay - Relay number
+## @return UNDEF with error_message set if relay is invalid
+##         1 if relay is valid
+##   @note 
+##----------------------------------------------------------------------------
+sub _valid_relay
+{
+  my $self = shift;
+  my $relay = shift;
+ 
+  unless (defined($relay))
+  {
+    $self->_error_message(qq{Relay parameter missing!});
+    return;
+  }
+  unless ($relay =~ /\A\d+\Z/x)
+  {
+    $self->_error_message(qq{Relay must be a number!});
+    return;
+  }
+  if (($relay < 0) || ($relay > 7))
+  {
+    $self->_error_message(qq{Relay must be a number between 0 and 7!});
+    return;
+  }
+  
+  return 1;
+}
+
+
+
+##****************************************************************************
+## Additional POD documentation
+##****************************************************************************
+
+=head1 AUTHOR
+
+Paul Durden E<lt>alabamapaul AT gmail.comE<gt>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright (C) 2015 by Paul Durden.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut
+
+1;    ## End of module
+__END__
+
