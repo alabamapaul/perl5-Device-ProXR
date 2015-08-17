@@ -5,3 +5,5 @@
 .build*
 ## Ignore jEdits marker files
 \#*\#
+## Ignore DistZilla's temporary release directory
+Device-ProXR-*
