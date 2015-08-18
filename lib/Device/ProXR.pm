@@ -14,13 +14,22 @@ controlling devices using the National Control Devices ProXR command set
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
+  ## Device::ProXR is a base class that is typicall extended
+  ##    see Device::ProXR::RelayControl 
   use Device::ProXR;
 
   my $board = Device::ProXR->new(port => 'COM1');
+
+=head1 SEE ALSO
+
+L<Device::ProXR::RelayControl>
+
+See the L<NCD wbsite|http://www.controlanything.com/> for the devices with
+the ProXR series controller.
 
 
 =cut

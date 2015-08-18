@@ -11,7 +11,7 @@ control.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 NOTES
 
@@ -23,6 +23,9 @@ Version 0.01
   use Device::ProXR::RelayControl;
   
   my $board = Device::ProXR::RelayControl->new(qq{COM2});
+  
+  $board->all_off;
+  $board->relay_on(1, 1);
   
 
 =cut
@@ -37,7 +40,7 @@ use Moo;
 
 extends 'Device::ProXR';
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 ##--------------------------------------------------------
 ## Symbolic constants
@@ -124,7 +127,7 @@ sub get_mode
 
 =item B<Description>
 
-Turn on the relay of the specific bank
+Turn on the relay of the specified bank
 
 =item B<Parameters>
 
@@ -170,7 +173,7 @@ sub relay_on
 
 =item B<Description>
 
-Turn off the relay of the specific bank
+Turn off the relay of the specified bank
 
 =item B<Parameters>
 
@@ -205,6 +208,361 @@ sub relay_off
   $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_OFF + $relay, $bank);
   
   return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 relay_status($bank, $relay)
+
+=over 2
+
+=item B<Description>
+
+Get the status of the relay of the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of the relay to control
+$relay - Relay number of the relay to control
+
+=item B<Return>
+
+UNDEF on error (with last_error set)
+0 == Relay is OFF
+1 == Relay is ON
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub relay_status
+{
+  my $self  = shift;
+  my $bank  = shift;
+  my $relay = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank_and_relay($bank, $relay));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_STATUS + $relay, $bank);
+  
+  ## Get the response
+  my $resp = $self->get_response;
+  if (defined($resp) && length($resp))
+  {
+    return(ord(substr($resp, 0, 1)));
+  }
+  return;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 all_on()
+
+=over 2
+
+=item B<Description>
+
+Turn on all relays on all banks
+
+=item B<Parameters>
+
+NONE
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub all_on
+{
+  my $self  = shift;
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_ALL_ON, 0);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 all_off()
+
+=over 2
+
+=item B<Description>
+
+Turn off all relays on all banks
+
+=item B<Parameters>
+
+NONE
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub all_off
+{
+  my $self  = shift;
+
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_ALL_OFF, 0);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 bank_on($bank)
+
+=over 2
+
+=item B<Description>
+
+Turn on all relays on the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of bank to control
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub bank_on
+{
+  my $self = shift;
+  my $bank = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank($bank));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+  
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_ALL_ON, $bank);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 bank_off($bank)
+
+=over 2
+
+=item B<Description>
+
+Turn off all relays on the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of bank to control
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub bank_off
+{
+  my $self = shift;
+  my $bank = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank($bank));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+  
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_ALL_OFF, $bank);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 bank_invert($bank)
+
+=over 2
+
+=item B<Description>
+
+Invert the status of all relays on the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of bank to control
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub bank_invert
+{
+  my $self = shift;
+  my $bank = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank($bank));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+  
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_INVERT, $bank);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 bank_reverse($bank)
+
+=over 2
+
+=item B<Description>
+
+Reverse / mirror the status of all relays on the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of bank to control
+
+=item B<Return>
+
+NONE
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub bank_reverse
+{
+  my $self = shift;
+  my $bank = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank($bank));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+  
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_RELAY_MIRROR, $bank);
+  
+  ## Return the response
+  return $self->get_response;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 bank_status($bank)
+
+=over 2
+
+=item B<Description>
+
+Return a byte with the statTurn on all relays on the specified bank
+
+=item B<Parameters>
+
+$bank - Bank number of bank to control
+
+=item B<Return>
+
+SCALAR - Each bit represents relay 0-7 status
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub bank_status
+{
+  my $self = shift;
+  my $bank = shift;
+
+  ## Validate parameters
+  return unless ($self->_valid_bank($bank));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+  
+  ## Send the command
+  $self->send_command($PROXR_CMD_BANK_DIRECTED_STATUS, $bank);
+  
+  ## Get the response
+  my $resp = $self->get_response;
+  if (defined($resp) && length($resp))
+  {
+    return(ord(substr($resp, 0, 1)));
+  }
+  return;
 }
 
 ##----------------------------------------------------------------------------

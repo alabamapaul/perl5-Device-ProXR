@@ -2,8 +2,14 @@
 ##----------------------------------------------------------------------------
 ## :mode=perl:indentSize=2:tabSize=2:noTabs=true:
 ##----------------------------------------------------------------------------
-##        File: 
-## Description: 
+##        File: proxr_relay_control.pl
+## Description: Use the Device::ProXR::RelayControl object to control a
+##              relay control board
+##----------------------------------------------------------------------------
+## NOTES
+##  * Before comitting this file to the repository, ensure Perl Critic can 
+##    be invoked at the HARSH [3] level with no errors
+##
 ##----------------------------------------------------------------------------
 use strict;
 use warnings;
@@ -36,6 +42,61 @@ Readonly::Scalar my $DEFAULT_TITLE => qq{ProXR Relay Control Script};
 Readonly::Scalar my $FALSE => 0;
 Readonly::Scalar my $TRUE  => 1;
 
+##--------------------------------------------------------
+## Lookup table
+##--------------------------------------------------------
+#<<< begin perltidy exclusion zone
+Readonly::Array my @COMMAND_LOOKUP_TABLE => (
+  {
+    command        => qq{STATUS}, 
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&relay_status,
+  },
+  {
+    command        => qq{ON},
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&relay_on,
+  },
+  {
+    command        => qq{OFF},
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&relay_off,
+  },
+  {
+    command        => qq{ALL_ON},
+    bank_required  => 0,
+    relay_required => 0,
+    function       => \&all_on,
+  },
+  {
+    command        => qq{ALL_OFF},
+    bank_required  => 0,
+    relay_required => 0,
+    function       => \&all_off,
+  },
+  {
+    command        => qq{BANK_ON},
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&bank_on,
+  },
+  {
+    command        => qq{BANK_OFF},
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&bank_off,
+  },
+  {
+    command        => qq{BANK_STATUS},
+    bank_required  => 1,
+    relay_required => 0,
+    function       => \&bank_status,
+  },
+);
+#>>> end perltidy exclusion zone
 
 ##--------------------------------------------------------
 ## A list of all command line options
@@ -177,17 +238,41 @@ sub display_usage_and_exit
 }
 
 ##----------------------------------------------------------------------------
-##     @fn validate_parameters()
+##     @fn validate_command();
 ##  @brief Validate parameters and invoke the usage and exit if needed 
 ##  @param 
-## @return 
+## @return HASH REFERENCE - Hash reference of the COMMAND_TABLE_LOOKUP entry
 ##   @note 
 ##----------------------------------------------------------------------------
-sub validate_parameters
+sub validate_command
 {
   my @errors = ();
+  my @required = (qw(port));
+
+  my $cmd;
+  foreach my $entry (@COMMAND_LOOKUP_TABLE)
+  {
+    if (uc($entry->{command}) eq uc($gOptions{command}))
+    {
+      $cmd = $entry;
+    }
+  }
+
+  ## See if we found a valid command
+  if ($cmd)
+  {
+    ## See if the command requires a bank parameter
+    push(@required, qq{bank}) if ($cmd->{bank_required});
+    ## See if the command requires a relay parameter
+    push(@required, qq{relay}) if ($cmd->{relay_required});
+  }
+  else
+  {
+    push(@errors, qq{Unknown command "$gOptions{command}"});
+  }
   
-  foreach my $param (qw(port bank relay))
+  ## Check that all required parameters exist
+  foreach my $param (@required)
   {
     if (!defined($gOptions{$param}))
     {
@@ -195,40 +280,182 @@ sub validate_parameters
     }
   }
   
+  ## See if bank parameter was provided
   if (defined($gOptions{bank}))
   {
+    ## Make sure bank parameter is valid
     if (($gOptions{bank} < 1) || ($gOptions{bank} > 255))
     {
       push(@errors, qq{Invalid --bank parameter, must be between 1 and 255!});
     }
   }
   
+  ## See if relay paramter was provided
   if (defined($gOptions{relay}))
   {
+    ## Make sure relay paramter is valid
     if (($gOptions{relay} < 0) || ($gOptions{relay} > 7))
     {
       push(@errors, qq{Invalid --relay parameter, must be between 0 and 7!});
     }
   }
   
-  $gOptions{command} = uc($gOptions{command});
-  
-  my $valid_cmd;
-  foreach my $cmd (qw(STATUS ON OFF))
-  {
-    $valid_cmd = 1 if ($gOptions{command} eq $cmd);
-  }
-  
-  push(@errors, qq{Unknown command "$gOptions{command}"}) unless ($valid_cmd);
-  
+  ## See if there are any errors
   if (scalar(@errors))
   {
+    ## Display the errors and usage, then exit
     display_usage_and_exit("\n\nERROR: \n  "
         . join("\n  ", @errors)
         . "\n\n");
   }
   
-  return;
+  ## Return the entry in the command lookup table
+  return($cmd);
+}
+
+##----------------------------------------------------------------------------
+##     @fn relay_status($board)
+##  @brief Print the relay status and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub relay_status
+{
+  my $board = shift;
+  
+  my $status = $board->relay_status($gOptions{bank}, $gOptions{relay});
+  if (!defined($status))
+  {
+    print(qq{ERROR: Could not read the relay status!\n});
+    exit(-1);
+  }
+  printf(qq{0x%02X\n}, $status);
+  exit(0);
+  
+}
+
+##----------------------------------------------------------------------------
+##     @fn relay_on($board)
+##  @brief Turn on a relay and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub relay_on
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->relay_on($gOptions{bank}, $gOptions{relay});
+  
+  return relay_status($board);
+}
+
+##----------------------------------------------------------------------------
+##     @fn relay_off($board)
+##  @brief Turn on a relay and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub relay_off
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->relay_off($gOptions{bank}, $gOptions{relay});
+  
+  return relay_status($board);
+}
+
+##----------------------------------------------------------------------------
+##     @fn all_on($board)
+##  @brief Turn on all relays
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub all_on
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->all_on();
+  
+  exit(0);
+}
+
+##----------------------------------------------------------------------------
+##     @fn all_off($board)
+##  @brief Turn off all relays
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub all_off
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->all_off();
+  
+  exit(0);
+}
+
+##----------------------------------------------------------------------------
+##     @fn bank_status($board)
+##  @brief Print the relay status of the bank and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub bank_status
+{
+  my $board = shift;
+  
+  my $status = $board->bank_status($gOptions{bank});
+  if (!defined($status))
+  {
+    print(qq{ERROR: Could not read the bank status!\n});
+    exit(-1);
+  }
+  printf(qq{0x%02X\n}, $status);
+  exit(0);
+}
+
+##----------------------------------------------------------------------------
+##     @fn bank_on($board)
+##  @brief Turn on all relays in the bank and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub bank_on
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->bank_on($gOptions{bank});
+  
+  return bank_status($board);
+}
+
+##----------------------------------------------------------------------------
+##     @fn bank_off($board)
+##  @brief Turn off all relays in the bank and exit
+##  @param $board - Device::ProXR::RelayControl object
+## @return NONE 
+##   @note 
+##----------------------------------------------------------------------------
+sub bank_off
+{
+  my $board = shift;
+  
+  ## Send the relay command
+  $board->bank_off($gOptions{bank});
+  
+  return bank_status($board);
 }
 
 ##----------------------------------------------------------------------------
@@ -240,7 +467,7 @@ $| = 1;    ## no critic (RequireLocalizedPunctuationVars)
 ## Parse the command line
 process_commandline();
 
-validate_parameters();
+my $cmd = validate_command();
 
 my $board = Device::ProXR::RelayControl->new(
   debug_level =>  $gOptions{debug},
@@ -254,22 +481,8 @@ unless ($board)
   exit(-1);
 }
 
-if ($gOptions{command} eq qq{STATUS})
-{
-  exit(0);
-}
-
-if ($gOptions{command} eq qq{ON})
-{
-  $board->relay_on($gOptions{bank}, $gOptions{relay});
-  exit(0);
-}
-if ($gOptions{command} eq qq{OFF})
-{
-  $board->relay_off($gOptions{bank}, $gOptions{relay});
-  exit(0);
-}
-
+## Invoke the command
+$cmd->{function}->($board);
 
 exit(0);
 
@@ -312,9 +525,15 @@ B<--relay> I<RelayNumber>
 =item B<--command> I<Command>
 
   Specify the command. Following commands are recognized:
-    STATUS - Print the status of the relay in the specified bank
-    ON     - Turn ON the relay in the specified bank
-    OFF    - Turn OFF the relay in the specified bank
+    BANK_STATUS - Print the status of all relays in the specified bank
+    BANK_ON     - Turn ON all relays in the specified bank
+    BANK_OFF    - Turn OFF all relays in the specified bank
+    STATUS      - Print the status of the relay in the specified bank
+    ON          - Turn ON the relay in the specified bank
+    OFF         - Turn OFF the relay in the specified bank
+    ALL_ON      - Turn ON all relays on all banks
+    ALL_OFF     - Turn OFF all relays on all banks
+    
   DEFAULT: --command STATUS
 
 =item B<--bank> I<BankNumber>
