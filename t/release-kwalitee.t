@@ -12,7 +12,6 @@
 use strict;
 use warnings;
 use Test::More 0.88;
-use Test::Kwalitee 1.21 'kwalitee_ok';
 
 BEGIN {
   unless ($ENV{RELEASE_TESTING}) {
@@ -26,6 +25,9 @@ BEGIN {
   }
 }
 
+## no critic (ProhibitStringyEval, RequireCheckingReturnValueOfEval)
+eval q(Test::Kwalitee 1.21 'kwalitee_ok');
+plan skip_all => q(Test::Kwalitee required for kwalitee testing) if $@;
 
 
 kwalitee_ok();
