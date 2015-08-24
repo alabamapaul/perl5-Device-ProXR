@@ -14,7 +14,7 @@ controlling devices using the National Control Devices ProXR command set
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -45,7 +45,7 @@ use Time::HiRes qw(usleep);
 use Carp qw(confess cluck);
 
 ## Version string
-our $VERSION = qq{0.01};
+our $VERSION = qq{0.03};
 
 
 ##--------------------------------------------------------

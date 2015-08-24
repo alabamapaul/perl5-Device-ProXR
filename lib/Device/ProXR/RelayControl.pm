@@ -11,7 +11,7 @@ control.
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 NOTES
 
@@ -40,7 +40,7 @@ use Moo;
 
 extends 'Device::ProXR';
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 ##--------------------------------------------------------
 ## Symbolic constants
@@ -121,13 +121,14 @@ sub get_mode
 ##****************************************************************************
 ##****************************************************************************
 
+=head2 relay_on($relay)
 =head2 relay_on($bank, $relay)
 
 =over 2
 
 =item B<Description>
 
-Turn on the relay of the specified bank
+Turn on the relay
 
 =item B<Parameters>
 
@@ -137,6 +138,12 @@ $relay - Relay number of the relay to control
 =item B<Return>
 
 UNDEF on error (with last_error set)
+
+=item B<NOTE>
+
+If only one parameter is specified, it is treated as a zero based relay number
+and the bank will be determined by dividing by 8, and the relay within the bank
+will be the remainder of dividing by 8
 
 =back
 
@@ -149,6 +156,14 @@ sub relay_on
   my $bank  = shift;
   my $relay = shift;
 
+  ## See if we just received 1 parameter  
+  if (defined($bank) and !defined($relay))
+  {
+    ## Convert this into bank and relay
+    $relay = $bank % 8;
+    $bank = int($bank/8);
+  }
+  
   ## Validate parameters
   return unless ($self->_valid_bank_and_relay($bank, $relay));
   ## Make sure bank != 0
@@ -167,6 +182,7 @@ sub relay_on
 ##****************************************************************************
 ##****************************************************************************
 
+=head2 relay_off($relay)
 =head2 relay_off($bank, $relay)
 
 =over 2
@@ -184,6 +200,12 @@ $relay - Relay number of the relay to control
 
 UNDEF on error (with last_error set)
 
+=item B<NOTE>
+
+If only one parameter is specified, it is treated as a zero based relay number
+and the bank will be determined by dividing by 8, and the relay within the bank
+will be the remainder of dividing by 8
+
 =back
 
 =cut
@@ -195,6 +217,14 @@ sub relay_off
   my $bank  = shift;
   my $relay = shift;
 
+  ## See if we just received 1 parameter  
+  if (defined($bank) and !defined($relay))
+  {
+    ## Convert this into bank and relay
+    $relay = $bank % 8;
+    $bank = int($bank/8);
+  }
+  
   ## Validate parameters
   return unless ($self->_valid_bank_and_relay($bank, $relay));
   ## Make sure bank != 0
