@@ -11,7 +11,7 @@ control.
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 NOTES
 
@@ -40,7 +40,7 @@ use Moo;
 
 extends 'Device::ProXR';
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 ##--------------------------------------------------------
 ## Symbolic constants
@@ -101,7 +101,7 @@ NONE
 
 =item B<Return>
 
-NONE
+Value indicating run mode
 
 =back
 
@@ -122,6 +122,7 @@ sub get_mode
 ##****************************************************************************
 
 =head2 relay_on($relay)
+
 =head2 relay_on($bank, $relay)
 
 =over 2
@@ -132,8 +133,8 @@ Turn on the relay
 
 =item B<Parameters>
 
-$bank - Bank number of the relay to control
-$relay - Relay number of the relay to control
+$bank - Bank number of the relay to control (1 based)
+$relay - Relay number of the relay to control (0 based)
 
 =item B<Return>
 
@@ -141,9 +142,9 @@ UNDEF on error (with last_error set)
 
 =item B<NOTE>
 
-If only one parameter is specified, it is treated as a zero based relay number
-and the bank will be determined by dividing by 8, and the relay within the bank
-will be the remainder of dividing by 8
+If only one parameter is specified, it is treated as a 0 based relay number
+and the bank is calculated as (relay / 8) + 1, and the relay within the bank
+is caluclated as (relay % 8)
 
 =back
 
@@ -157,11 +158,11 @@ sub relay_on
   my $relay = shift;
 
   ## See if we just received 1 parameter  
-  if (defined($bank) and !defined($relay))
+  if (defined($bank) and (!defined($relay)))
   {
     ## Convert this into bank and relay
     $relay = $bank % 8;
-    $bank = int($bank/8);
+    $bank = int($bank / 8) + 1; ## Bank numbers are 1 based
   }
   
   ## Validate parameters
@@ -183,6 +184,7 @@ sub relay_on
 ##****************************************************************************
 
 =head2 relay_off($relay)
+
 =head2 relay_off($bank, $relay)
 
 =over 2
@@ -193,8 +195,8 @@ Turn off the relay of the specified bank
 
 =item B<Parameters>
 
-$bank - Bank number of the relay to control
-$relay - Relay number of the relay to control
+$bank - Bank number of the relay to control (1 based)
+$relay - Relay number of the relay to control (0 based)
 
 =item B<Return>
 
@@ -202,9 +204,9 @@ UNDEF on error (with last_error set)
 
 =item B<NOTE>
 
-If only one parameter is specified, it is treated as a zero based relay number
-and the bank will be determined by dividing by 8, and the relay within the bank
-will be the remainder of dividing by 8
+If only one parameter is specified, it is treated as a 0 based relay number
+and the bank is calculated as (relay / 8) + 1, and the relay within the bank
+is caluclated as (relay % 8)
 
 =back
 
@@ -218,7 +220,7 @@ sub relay_off
   my $relay = shift;
 
   ## See if we just received 1 parameter  
-  if (defined($bank) and !defined($relay))
+  if (defined($bank) and (!defined($relay)))
   {
     ## Convert this into bank and relay
     $relay = $bank % 8;

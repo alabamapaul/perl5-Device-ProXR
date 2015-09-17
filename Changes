@@ -1,4 +1,7 @@
 {{$NEXT}}
+        * In Device::ProXR::RelayControl, corrected problem when calling the
+          relay_on() and relay_off() methods with a single parameter
+        * Corrected some POD errors
 
 0.03    2015-08-24
         * Updated relay_on() and relay_off() methods to accept zero based
