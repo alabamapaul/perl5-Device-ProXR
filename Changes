@@ -1,5 +1,6 @@
 {{$NEXT}}
-
+        * In Device::ProXR, corrected a timeout problem in get_response
+        
 0.04    2015-09-17
         * In Device::ProXR::RelayControl, corrected problem when calling the
           relay_on() and relay_off() methods with a single parameter
