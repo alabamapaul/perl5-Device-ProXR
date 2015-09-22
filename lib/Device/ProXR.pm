@@ -14,7 +14,7 @@ controlling devices using the National Control Devices ProXR command set
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
@@ -45,7 +45,7 @@ use Time::HiRes qw(usleep);
 use Carp qw(confess cluck);
 
 ## Version string
-our $VERSION = qq{0.04};
+our $VERSION = qq{0.05};
 
 
 ##--------------------------------------------------------
@@ -183,8 +183,9 @@ has debug_level => (
 
 ## Holds the port object 
 has _port_obj  => (
-  is      => qq{rw},
-  default => undef,
+  is        => qq{rw},
+  predicate => 1,
+
 );
 
 ## Error message
@@ -215,7 +216,7 @@ sub _get_port_object ## no critic (ProhibitUnusedPrivateSubroutines)
   my $self = shift;
   
   ## Returh the object if it already exists
-  return($self->_port_obj) if ($self->_port_obj);
+  return($self->_port_obj) if ($self->_has_port_obj);
   
   ## See if a port was specified
   unless ($self->port)
@@ -420,17 +421,26 @@ sub get_response
   ## API mode, responses contain 3 extra bytes
   $expected += 3 if ($self->API_mode);
 
-  return unless ($self->_get_port_object);
+  return unless ($self->_has_port_obj);
   
   my $rx_buff = qq{};
+
+  ## Set the timeout
+  $self->_port_obj->read_const_time($ms_timeout);
   
-  while (($ms_timeout != 0) && ($expected != length($rx_buff)))
+  my $timeout = 0;
+  while ((!$timeout) and ($expected != length($rx_buff)))
   {
     ## Read the bytes
     my ($rx_count, $rx_raw) = $self->_port_obj->read(16);
-    $rx_buff .= $rx_raw if ($rx_count);
-    $ms_timeout--;
-    usleep($USECS_PER_MS);
+    if ($rx_count)
+    {
+      $rx_buff .= $rx_raw ;
+    }
+    else
+    {
+      $timeout = 1;
+    }
   }
   
   ## Print debug output
