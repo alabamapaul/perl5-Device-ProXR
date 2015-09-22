@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.05    2015-09-22
         * In Device::ProXR, corrected a timeout problem in get_response
         
 0.04    2015-09-17
