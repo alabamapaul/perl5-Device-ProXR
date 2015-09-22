@@ -30,10 +30,10 @@ use Readonly;
 use Getopt::Long;
 use Pod::Usage;
 use Cwd qw(abs_path);
-use Device::ProXR::RelayControl;
+use Device::ProXR::RelayControl 0.05;
 
 ## Used for the version string
-Readonly::Scalar my $VERSION => qq{0.01};
+Readonly::Scalar my $VERSION => qq{0.02};
 Readonly::Scalar my $DEFAULT_TITLE => qq{ProXR Relay Control Script};
 
 ##--------------------------------------------------------
@@ -381,7 +381,13 @@ sub all_on
   my $board = shift;
   
   ## Send the relay command
-  $board->all_on();
+  my $resp = $board->all_on();
+  
+  unless (length($resp))
+  {
+    print(qq{ERROR: No response received!\n});
+    exit(-1);
+  }
   
   exit(0);
 }
@@ -398,7 +404,13 @@ sub all_off
   my $board = shift;
   
   ## Send the relay command
-  $board->all_off();
+  my $resp = $board->all_off();
+  
+  unless (length($resp))
+  {
+    print(qq{ERROR: No response received!\n});
+    exit(-1);
+  }
   
   exit(0);
 }
