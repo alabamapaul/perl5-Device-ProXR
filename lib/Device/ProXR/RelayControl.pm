@@ -11,7 +11,7 @@ control.
 
 =head1 VERSION
 
-Version 0.04
+Version 0.06
 
 =head1 NOTES
 
@@ -22,11 +22,14 @@ Version 0.04
 
   use Device::ProXR::RelayControl;
   
-  my $board = Device::ProXR::RelayControl->new(qq{COM2});
+  my $board = Device::ProXR::RelayControl->new(port => qq{COM2});
   
   $board->all_off;
   $board->relay_on(1, 1);
   
+=head1 SEE ALSO
+
+See L<Device::ProXR> for attributes and methods of the base class.
 
 =cut
 
@@ -40,7 +43,7 @@ use Moo;
 
 extends 'Device::ProXR';
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
 ##--------------------------------------------------------
 ## Symbolic constants
@@ -294,6 +297,73 @@ sub relay_status
     return(ord(substr($resp, 0, 1)));
   }
   return;
+}
+
+##****************************************************************************
+##****************************************************************************
+
+=head2 relay_control($on, $relay)
+
+=head2 relay_control($on, $bank, $relay)
+
+=over 2
+
+=item B<Description>
+
+Turn the relay on or off
+
+=item B<Parameters>
+
+$on - Indicates if the relay should be turned on or off
+$bank - Bank number of the relay to control (1 based)
+$relay - Relay number of the relay to control (0 based)
+
+=item B<Return>
+
+UNDEF on error (with last_error set)
+
+=item B<NOTE>
+
+If only two parameters are specified, the second parameter is treated as a 
+0 based relay number and the bank is calculated as (relay / 8) + 1, and the
+relay within the bank is caluclated as (relay % 8)
+
+=back
+
+=cut
+
+##----------------------------------------------------------------------------
+sub relay_control
+{
+  my $self  = shift;
+  my $on    = shift;
+  my $bank  = shift;
+  my $relay = shift;
+
+  ## See if we just received 1 parameter  
+  if (defined($bank) and (!defined($relay)))
+  {
+    ## Convert this into bank and relay
+    $relay = $bank % 8;
+    $bank = int($bank / 8) + 1; ## Bank numbers are 1 based
+  }
+  
+  ## Validate parameters
+  return unless ($self->_valid_bank_and_relay($bank, $relay));
+  ## Make sure bank != 0
+  unless ($bank)
+  {
+    $self->_error_message(qq{Bank parameter cannot be 0!});
+    return;
+  }
+
+  ## Set the command to be sent
+  my $cmd = ($on ? $PROXR_CMD_BANK_DIRECTED_RELAY_ON : $PROXR_CMD_BANK_DIRECTED_RELAY_OFF);
+  
+  ## Send the command
+  $self->send_command($cmd + $relay, $bank);
+  
+  return $self->get_response;
 }
 
 ##****************************************************************************
