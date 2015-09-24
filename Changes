@@ -1,5 +1,16 @@
 {{$NEXT}}
 
+0.06    2015-09-24
+        * In Device::ProXR
+          + Added the write_settings() call required to set the serial port
+            settings within Windows
+        * In Device::ProXR::RelayControl
+          + Added the relay_control() method to allow turning on or off 
+            the relay.
+          + Added a "SEE ALSO" section to the POD with a link back to the
+            Device::ProXR class
+          + Corrected the "SYNOPSIS" example
+
 0.05    2015-09-22
         * In Device::ProXR, corrected a timeout problem in get_response
         
