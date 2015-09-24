@@ -14,7 +14,7 @@ controlling devices using the National Control Devices ProXR command set
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
@@ -22,13 +22,13 @@ Version 0.05
   ##    see Device::ProXR::RelayControl 
   use Device::ProXR;
 
-  my $board = Device::ProXR->new(port => 'COM1');
+  my $board = Device::ProXR->new(port => qq{COM1});
 
 =head1 SEE ALSO
 
 L<Device::ProXR::RelayControl>
 
-See the L<NCD wbsite|http://www.controlanything.com/> for the devices with
+See the L<NCD website|http://www.controlanything.com/> for the devices with
 the ProXR series controller.
 
 
@@ -45,7 +45,7 @@ use Time::HiRes qw(usleep);
 use Carp qw(confess cluck);
 
 ## Version string
-our $VERSION = qq{0.05};
+our $VERSION = qq{0.06};
 
 
 ##--------------------------------------------------------
@@ -256,6 +256,9 @@ sub _get_port_object ## no critic (ProhibitUnusedPrivateSubroutines)
   $obj->handshake(qq{none});
   $obj->read_const_time($READ_POLL_TIMEOUT_MS);
   $obj->purge_all;
+  
+  ## Write all settings to the serial port
+  $obj->write_settings;
   
   ## Set the port object
   $self->_port_obj($obj);
