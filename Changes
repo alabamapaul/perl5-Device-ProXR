@@ -1,5 +1,9 @@
 {{$NEXT}}
 
+0.07    2015-09-28
+        * Added the minimum perl requirement of 5.10
+        * Dist::Zilla dist.ini file provided in tarball
+
 0.06    2015-09-24
         * In Device::ProXR
           + Added the write_settings() call required to set the serial port
