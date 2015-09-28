@@ -14,7 +14,7 @@ controlling devices using the National Control Devices ProXR command set
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
@@ -40,12 +40,13 @@ use Moo;
 ## Moo enables strictures
 ## no critic (TestingAndDebugging::RequireUseStrict)
 ## no critic (TestingAndDebugging::RequireUseWarnings)
+use perl 5.010
 use Readonly;
 use Time::HiRes qw(usleep);
 use Carp qw(confess cluck);
 
 ## Version string
-our $VERSION = qq{0.06};
+our $VERSION = qq{0.07};
 
 
 ##--------------------------------------------------------
