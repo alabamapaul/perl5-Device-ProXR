@@ -40,7 +40,7 @@ use Moo;
 ## Moo enables strictures
 ## no critic (TestingAndDebugging::RequireUseStrict)
 ## no critic (TestingAndDebugging::RequireUseWarnings)
-use perl 5.010
+use 5.010;
 use Readonly;
 use Time::HiRes qw(usleep);
 use Carp qw(confess cluck);
