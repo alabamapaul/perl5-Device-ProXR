@@ -18,10 +18,10 @@ BEGIN {
     require Test::More;
     Test::More::plan(skip_all => 'these tests are for release candidate testing');
   }
-  if ($^O eq 'MSWin32')
+  if ($ENV{SKIP_KWALITEE})
   {
     require Test::More;
-    Test::More::plan(skip_all => 'Kwalitee tests have problems under Windoze');
+    Test::More::plan(skip_all => 'SKIP_KWALITEE defined.');
   }
 }
 
